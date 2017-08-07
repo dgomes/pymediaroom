@@ -59,7 +59,7 @@ Available Keys
 - AV
 - Prev
 - Next
-- Options'
+- Options
 - Favourite
 
 Copyright
