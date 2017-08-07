@@ -1,5 +1,5 @@
 import logging
-import mediaroom
+import pymediaroom
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
