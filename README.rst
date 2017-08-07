@@ -1,7 +1,7 @@
 pymediaroom - Python Remote Control for Mediaroom STB
 =====================================================
 
-Mediaroom is an IPTV platform currently developed by Ericsson with deployments worldwide
+Mediaroom is an IPTV platform currently developed by Ericsson with deployments worldwide,
 for more information check `wikipedia`_.
 
 This python package provides an api that sends to the set-up-box the same commands the IR remote sends.
