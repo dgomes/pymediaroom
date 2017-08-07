@@ -10,6 +10,58 @@ to the same network segment as the set-up-box.
 
 .. _wikipedia: https://en.wikipedia.org/wiki/Ericsson_Mediaroom
 
+
+Available Keys
+==============
+
+    Number0
+    Number1
+    Number2
+    Number3
+    Number4
+    Number5
+    Number6
+    Number7
+    Number8
+    Number9
+    Back
+    OK
+    Menu
+    Left
+    Right
+    Up
+    Down
+    ProgUp
+    ProgDown
+    VolUp
+    VolDown
+    Mute
+    Exit
+    Guide
+    Switch
+    Rec
+    PlayPause
+    Forward
+    Rewind
+    Power
+    Info
+    Search
+    Enter
+    VoD
+    Stop
+    Red
+    Green
+    Yellow
+    Blue
+    Delete
+    Options
+    Open
+    AV
+    Prev
+    Next
+    Options'
+    Favourite
+
 Copyright
 ---------
 
