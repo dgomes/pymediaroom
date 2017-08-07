@@ -1,0 +1,8 @@
+README.rst
+setup.py
+pymediaroom/__init__.py
+pymediaroom.egg-info/PKG-INFO
+pymediaroom.egg-info/SOURCES.txt
+pymediaroom.egg-info/dependency_links.txt
+pymediaroom.egg-info/not-zip-safe
+pymediaroom.egg-info/top_level.txt
