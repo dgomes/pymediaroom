@@ -104,7 +104,7 @@ class Remote():
         _LOGGER.info("Disconnected")
 
 
-    def discover(self, PORT=8082, GROUP='239.255.255.250'):
+    def search(self, PORT=8082, GROUP='239.255.255.250'):
         addrinfo = socket.getaddrinfo(GROUP, None)[0]
 
         s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
@@ -120,5 +120,15 @@ class Remote():
 
         _LOGGER.debug(data)
         _LOGGER.debug(sender)
-        return sender[0]
+        return data, sender[0]
 
+    def discover(self):
+        data, src = self.search()
+        return src
+
+    def get_status(self):
+        data, src = self.search()
+
+        if len(data) > 450:
+            return True
+        return False
