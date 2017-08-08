@@ -9,7 +9,7 @@ import struct
 
 _LOGGER = logging.getLogger(__name__)
 
-version = '0.1'
+version = '0.3'
 
 Commands = {
             'Number0': 48,
@@ -117,7 +117,8 @@ class Remote():
 
         data, sender = s.recvfrom(2500)
         while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
-
+        s.close()
+        
         _LOGGER.debug(data)
         _LOGGER.debug(sender)
         return data, sender[0]
@@ -126,9 +127,8 @@ class Remote():
         data, src = self.search()
         return src
 
-    def get_status(self):
+    def get_standby(self):
         data, src = self.search()
-
         if len(data) > 450:
-            return True
-        return False
+            return False
+        return True
