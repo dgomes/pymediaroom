@@ -129,6 +129,6 @@ class Remote():
 
     def get_standby(self):
         data, src = self.search()
-        if len(data) > 450:
+        if "<tune" in data:
             return False
         return True
