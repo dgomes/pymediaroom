@@ -64,9 +64,10 @@ Commands = {
 class Remote():
     """This class represents a MediaRoom Set-up-Box Remote Control."""
 
-    def __init__(self, ip=None, port=8082):
+    def __init__(self, ip=None, port=8082, timeout=60):
 
         self.s = None #postpone multicast socket creation
+        self.timeout = timeout
         if ip is None:
             self.stb_ip = self.discover()
         else:
@@ -111,6 +112,7 @@ class Remote():
         self.s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.s.settimeout(self.timeout)
         self.s.bind(('', PORT))
 
         group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
