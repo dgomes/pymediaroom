@@ -66,6 +66,7 @@ class Remote():
 
     def __init__(self, ip=None, port=8082):
 
+        self.s = None #postpone multicast socket creation
         if ip is None:
             self.stb_ip = self.discover()
         else:
@@ -101,34 +102,38 @@ class Remote():
 
     def __del__(self):
         self.stbCmd.close()
+        self.s.close()
         _LOGGER.info("Disconnected")
 
-
-    def search(self, PORT=8082, GROUP='239.255.255.250'):
+    def create_socket(self, PORT=8082, GROUP='239.255.255.250'):
         addrinfo = socket.getaddrinfo(GROUP, None)[0]
 
-        s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(('', PORT))
+        self.s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.s.bind(('', PORT))
 
         group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
         mreq = group_bin + struct.pack('=I', socket.INADDR_ANY)
-        s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        self.s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-        data, sender = s.recvfrom(2500)
+    def get_notify(self):
+        if self.s == None:
+            self.create_socket()
+        data, sender = self.s.recvfrom(2500)
         while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
-        s.close()
         
         _LOGGER.debug(data)
         _LOGGER.debug(sender)
         return data, sender[0]
 
     def discover(self):
-        data, src = self.search()
+        data, src = self.get_notify()
         return src
 
     def get_standby(self):
-        data, src = self.search()
+        src = None
+        while src != self.stb_ip:
+            data, src = self.get_notify()
         if "<tune" in data:
             return False
         return True
