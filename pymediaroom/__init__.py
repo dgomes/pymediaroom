@@ -135,6 +135,6 @@ class Remote():
         src = None
         while src != self.stb_ip:
             data, src = self.get_notify()
-        if "<tune" in data:
+        if b'<tune' in data:
             return False
         return True
