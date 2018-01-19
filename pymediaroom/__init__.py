@@ -64,14 +64,11 @@ Commands = {
 class Remote():
     """This class represents a MediaRoom Set-up-Box Remote Control."""
 
-    def __init__(self, ip=None, port=8082, timeout=60):
+    def __init__(self, ip, port=8082, timeout=60):
 
         self.s = None #postpone multicast socket creation
         self.timeout = timeout
-        if ip is None:
-            self.stb_ip = self.discover()
-        else:
-            self.stb_ip = ip
+        self.stb_ip = ip
         self.stb_port = port
 
         self.stbCmd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,37 +103,51 @@ class Remote():
         self.s.close()
         _LOGGER.info("Disconnected")
 
-    def create_socket(self, PORT=8082, GROUP='239.255.255.250'):
+    @staticmethod
+    def create_socket(timeout=60, PORT=8082, GROUP='239.255.255.250'):
         addrinfo = socket.getaddrinfo(GROUP, None)[0]
 
-        self.s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
-        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.s.settimeout(self.timeout)
-        self.s.bind(('', PORT))
+        s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        s.settimeout(timeout)
+        s.bind(('', PORT))
 
         group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
         mreq = group_bin + struct.pack('=I', socket.INADDR_ANY)
-        self.s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        return s
 
-    def get_notify(self):
-        if self.s == None:
-            self.create_socket()
-        data, sender = self.s.recvfrom(2500)
-        while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
-        
+    @staticmethod
+    def get_notify(s):
+        try:
+            data, sender = s.recvfrom(2500)
+            while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
+        except socket.timeout:
+            _LOGGER.warning("timeout on NOTIFY")
+            raise socket.timeout()
+
         _LOGGER.debug(data)
         _LOGGER.debug(sender)
         return data, sender[0]
 
-    def discover(self):
-        data, src = self.get_notify()
+    @staticmethod
+    def discover():
+        s = Remote.create_socket()
+        data, src = Remote.get_notify(s)
         return src
 
-    def get_standby(self):
+    def get_standby(self, default_status=False):
+        if self.s == None:
+            self.s = Remote.create_socket(timeout=self.timeout)
+
         src = None
-        while src != self.stb_ip:
-            data, src = self.get_notify()
-        if b'<tune' in data:
-            return False
-        return True
+        try:
+            while src != self.stb_ip:
+                data, src = self.get_notify(self.s)
+            if b'<tune' in data:
+                return False
+            return True
+        except socket.timeout:
+            _LOGGER.warning("Couldn't get stanby status")
+            return default_status 
