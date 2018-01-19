@@ -110,6 +110,7 @@ class Remote():
 
         self.s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.s.bind(('', PORT))
 
         group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
