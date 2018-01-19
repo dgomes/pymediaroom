@@ -9,7 +9,7 @@ import struct
 
 _LOGGER = logging.getLogger(__name__)
 
-version = '0.3'
+version = '0.5'
 
 Commands = {
             'Number0': 48,
@@ -137,7 +137,7 @@ class Remote():
         data, src = Remote.get_notify(s)
         return src
 
-    def get_standby(self, default_status=False):
+    def get_standby(self, default_status=True):
         if self.s == None:
             self.s = Remote.create_socket(timeout=self.timeout)
 
@@ -149,5 +149,5 @@ class Remote():
                 return False
             return True
         except socket.timeout:
-            _LOGGER.warning("Couldn't get stanby status")
+            _LOGGER.warning("Couldn't get standby status")
             return default_status 
