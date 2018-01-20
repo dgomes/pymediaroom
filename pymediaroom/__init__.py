@@ -110,6 +110,7 @@ class Remote():
         s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        s.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,2048)
         s.settimeout(timeout)
         s.bind(('', PORT))
 
@@ -121,21 +122,24 @@ class Remote():
     @staticmethod
     def get_notify(s):
         try:
-            data, sender = s.recvfrom(2500)
-            while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
+            data, sender = s.recvfrom(2048)
         except socket.timeout:
             _LOGGER.warning("timeout on NOTIFY")
             raise socket.timeout()
 
+        while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
         _LOGGER.debug(data)
         _LOGGER.debug(sender)
         return data, sender[0]
 
     @staticmethod
-    def discover():
+    def discover(ignore_list=[]):
         s = Remote.create_socket()
-        data, src = Remote.get_notify(s)
-        return src
+        for i in range(4):
+            data, src = Remote.get_notify(s)
+            if not src in ignore_list:
+                return src
+        return None  
 
     def get_standby(self, default_status=True):
         if self.s == None:
