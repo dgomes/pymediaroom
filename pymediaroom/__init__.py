@@ -8,6 +8,7 @@ import socket
 import struct
 
 _LOGGER = logging.getLogger(__name__)
+NOTIFY_BUFFER = 1024 
 
 version = '0.5'
 
@@ -100,7 +101,8 @@ class Remote():
 
     def __del__(self):
         self.stbCmd.close()
-        self.s.close()
+        if self.s != None:
+            self.s.close()
         _LOGGER.info("Disconnected")
 
     @staticmethod
@@ -110,7 +112,7 @@ class Remote():
         s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        s.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,2048)
+        s.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,NOTIFY_BUFFER)
         s.settimeout(timeout)
         s.bind(('', PORT))
 
@@ -122,7 +124,7 @@ class Remote():
     @staticmethod
     def get_notify(s):
         try:
-            data, sender = s.recvfrom(2048)
+            data, sender = s.recvfrom(NOTIFY_BUFFER)
         except socket.timeout:
             _LOGGER.warning("timeout on NOTIFY")
             raise socket.timeout()
