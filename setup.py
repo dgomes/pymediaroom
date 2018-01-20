@@ -8,4 +8,5 @@ setup(name='pymediaroom',
       author_email='diogogomes@gmail.com',
       license='MIT',
       packages=['pymediaroom'],
-      zip_safe=False)
+      download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.5',
+      )
