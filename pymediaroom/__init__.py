@@ -111,7 +111,15 @@ class Remote():
 
         s = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
+        # for BSD/Darwin only
+        try:
+            socket.SO_REUSEPORT
+        except AttributeError:
+            _LOGGER.debug("No SO_REUSEPORT available, skipping")
+        else:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
         s.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,NOTIFY_BUFFER)
         s.settimeout(timeout)
         s.bind(('', PORT))
