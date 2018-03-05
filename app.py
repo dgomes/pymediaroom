@@ -1,20 +1,27 @@
 import logging
-import pymediaroom
+from pymediaroom import (discover, Remote)
+import asyncio
+
+async def main(loop):
+    stbs = await discover(max_wait=5, loop=loop)
+    stbs = list(stbs)
+    if stbs:
+        logging.info("Found {}".format(stbs[0]))
+        remote = Remote(stbs[0], loop=loop)
+
+        await remote.turn_on()
+
+        await asyncio.sleep(10)
+        print("bye bye")
+        await remote.turn_off()
+
+    else:
+        logging.erro("No STB Found")
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     
-    #discover STB
-    stb_ip = pymediaroom.Remote.discover(["192.168.1.6"])
-    if stb_ip != None:
-        
-        logging.info("Found {}".format(stb_ip))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(loop))
+    loop.close()
 
-        #Create Remote per stb, timeout is relevant for status updates
-        stb = pymediaroom.Remote(stb_ip, timeout=10)
-        #monitor standby
-        while(not stb.get_standby()):
-            logging.info("OK")
-        logging.info("STB is in Standby")
-        #send command
-        #stb.send_cmd("Info")
