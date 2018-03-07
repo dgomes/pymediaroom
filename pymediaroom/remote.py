@@ -39,7 +39,6 @@ class Remote():
     async def open_control(self):
         try:
             async with timeout(OPEN_CONTROL_TIMEOUT, loop=self.loop):
-                self.mr_protocol = await installMediaroomProtocol(box_ip=self.stb_ip, loop=self.loop)
                 _LOGGER.info("Connecting to %s:%s" % (self.stb_ip, self.stb_port))
                 self.stb_recv, self.stb_send = await asyncio.open_connection(self.stb_ip, self.stb_port, loop=self.loop) 
                 await self.stb_recv.read(6)
@@ -63,25 +62,30 @@ class Remote():
         else:
             keys = [Commands[cmd]]
 
-        for key in keys:
-            _LOGGER.debug("{} key={}".format(cmd, key))
-            self.stb_send.write("key={}\n".format(key).encode('UTF-8'))
-            _ = await self.stb_recv.read(3)
-            await asyncio.sleep(0.300)
+        try:
+            for key in keys:
+                _LOGGER.debug("{} key={}".format(cmd, key))
+                self.stb_send.write("key={}\n".format(key).encode('UTF-8'))
+                _ = await self.stb_recv.read(3)
+                await asyncio.sleep(0.300)
+        except asyncio.TimeoutError as e:
+            _LOGGER.error(e)
+            self.stb_send.close()
+            self.stb_send = self.stb_recv = None
+            #TODO retry send_cmd
 
     async def turn_on(self):
         """Turn off media player."""
-        standby = await self.get_standby()
-        _LOGGER.debug("turn_on %s", standby)
-        standby = await self.get_standby()
-        if standby:
+        state = await self.get_state()
+        _LOGGER.debug("turn_on while %s", state)
+        if state is State.STANDBY:
             await self.send_cmd('Power')
 
     async def turn_off(self):
         """Turn off media player."""
-        playing = await self.get_playing()
-        _LOGGER.debug("turn_off %s", playing)
-        if playing:
+        state = await self.get_state()
+        _LOGGER.debug("turn_off while %s", state)
+        if state is State.PLAYING:
             await self.send_cmd('Power')
 
     def __del__(self):
@@ -91,10 +95,10 @@ class Remote():
             _LOGGER.info("Disconnected")
 
     async def get_state(self):
-        if not self.mr_protocol:
-            await self.open_control()
-        try:        
+        try:
             async with timeout(GET_STATE_TIMEOUT, loop=self.loop):
+                self.mr_protocol = await installMediaroomProtocol(box_ip=self.stb_ip, loop=self.loop)
+            
                 notify = await self.mr_protocol.responses.get()
                 
                 if notify.tune:
@@ -104,34 +108,6 @@ class Remote():
         except asyncio.TimeoutError as e:
             return State.OFF
         
-    async def get_standby(self):
-        state = await self.get_state()
-        return state == STANDBY 
-
-    async def get_playing(self):
-        state = await self.get_state()
-        return state == PLAYING
-
-    def update(self):
-        if self.s == None:
-            self.s = Remote.create_socket(timeout=self.timeout)
-
-        src = None
-        try:
-            while src != self.stb_ip:
-                data, src = self.get_notify(self.s)
-
-            for line in data.split('\n'):
-                _LOGGER.debug(line)
-
-            if '<tune' in data:
-                self._standby = False
-            else:
-                self._standby = True
-
-        except socket.timeout:
-            _LOGGER.warning("Couldn't get NOTIFY message")
-            self._standby = None
 
 async def discover(ignore_list = [], max_wait=30, loop=None):
     stbs = []

@@ -12,21 +12,11 @@ async def main(loop):
         logging.info("Found {}".format(stbs))
         remote = Remote(stbs[0], loop=loop)
 
-        remote2 = Remote("192.168.1.12", loop=loop)
-#        await remote.turn_on()
-        try:
-            while True:
-                state = await remote.get_state()
-                state2 = await remote2.get_state()
-                print("{} = {}".format(remote, state))
-                print("{} = {}".format(remote2, state2))
-                await asyncio.sleep(10)
-                print("WAKE")
-        except KeyboardInterrupt as e:
-            pass
+        await remote.turn_on()
 
-        print("bye bye")
-#        await remote.turn_off()
+        await asyncio.sleep(10)
+
+        await remote.turn_off()
 
     else:
         logging.error("No STB Found")
