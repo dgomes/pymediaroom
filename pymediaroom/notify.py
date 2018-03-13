@@ -38,7 +38,7 @@ class MRNotify(object):
         self.data = data
 
     def __str__(self):
-        return "NOTIFY from {}".format(self.src_ip)
+        return "NOTIFY from {} - {}".format(self.src_ip, self.tune)
 
     @property
     def tune(self):
@@ -51,14 +51,14 @@ class MRNotify(object):
     def ip_address(self):
         return self.src_ip
 
-async def installMediaroomProtocol(box_ip=None, loop=None):
+async def installMediaroomProtocol(responses_callback, box_ip=None, loop=None):
 
     class MediaroomProtocol:
-        def __init__(self, loop, addr):
+        def __init__(self, loop, responses_callback, addr):
             self.loop = loop
             self.transport = None
             self.addr = addr
-            self.responses = asyncio.Queue(loop=loop)
+            self.responses = responses_callback 
 
         def connection_made(self, transport):
             self.transport = transport
@@ -85,10 +85,7 @@ async def installMediaroomProtocol(box_ip=None, loop=None):
 
         def datagram_received(self, data, addr):
             if not box_ip or box_ip == addr[0]:
-                # Clear queue, only the last notify is relevant
-                while not self.responses.empty():
-                    self.responses.get_nowait()
-                self.responses.put_nowait(MRNotify(addr, data))
+                self.responses(MRNotify(addr, data))
 
         def error_received(self, exc):
             _LOGGER.error('Error received:', exc)
@@ -103,7 +100,7 @@ async def installMediaroomProtocol(box_ip=None, loop=None):
 
     loop = loop or asyncio.get_event_loop()
 
-    mediaroom_protocol = MediaroomProtocol(loop,MEDIAROOM_BROADCAST_ADDR)
+    mediaroom_protocol = MediaroomProtocol(loop, responses_callback, MEDIAROOM_BROADCAST_ADDR)
 
     addrinfo = socket.getaddrinfo(MEDIAROOM_BROADCAST_ADDR, None)[0]
     sock = socket.socket(addrinfo[0], socket.SOCK_DGRAM)

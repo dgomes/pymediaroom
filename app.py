@@ -11,6 +11,8 @@ async def main(loop):
     if stbs:
         logging.info("Found {}".format(stbs))
         remote = Remote(stbs[0], loop=loop)
+        #remote = Remote("192.168.1.69", loop=loop)
+        await remote.monitor_state()
 
         await remote.turn_on()
 

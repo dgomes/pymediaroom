@@ -32,24 +32,31 @@ class Remote():
         self.loop = loop
         self.mr_protocol = None
         self.stb_recv = self.stb_send = None
-
+        self.state = State.UNKNOWN
+    
     def __repr__(self):
         return self.stb_ip
 
     async def open_control(self):
         try:
             async with timeout(OPEN_CONTROL_TIMEOUT, loop=self.loop):
-                _LOGGER.info("Connecting to %s:%s" % (self.stb_ip, self.stb_port))
+                _LOGGER.debug("Connecting to %s:%s" % (self.stb_ip, self.stb_port))
                 self.stb_recv, self.stb_send = await asyncio.open_connection(self.stb_ip, self.stb_port, loop=self.loop) 
                 await self.stb_recv.read(6)
                 _LOGGER.info("Connected to %s:%s" % (self.stb_ip, self.stb_port))
         except asyncio.TimeoutError as e:
             _LOGGER.error("Timeout connecting to %s", self.stb_ip)
+            self.stb_send = self.stb_recv = None
+            raise PyMediaroomError("Timeout connecting to {}".format(self.stb_ip))
 
     async def send_cmd(self, cmd):
         _LOGGER.debug("Send cmd = %s", cmd)
-        if self.stb_recv == self.stb_send:
-            await self.open_control()
+        try:
+            if self.stb_recv == self.stb_send: 
+                await self.open_control()
+        except PyMediaroomError:
+            _LOGGER.error("No connection to STB")
+            return
 
         if cmd not in Commands and cmd not in range(0,999):
             _LOGGER.error("Unknown command")
@@ -76,49 +83,39 @@ class Remote():
 
     async def turn_on(self):
         """Turn off media player."""
-        state = await self.get_state()
-        _LOGGER.debug("turn_on while %s", state)
-        if state is State.STANDBY:
+        _LOGGER.debug("turn_on while %s", self.state)
+        if self.state is State.STANDBY:
             await self.send_cmd('Power')
 
     async def turn_off(self):
         """Turn off media player."""
-        state = await self.get_state()
-        _LOGGER.debug("turn_off while %s", state)
-        if state is State.PLAYING:
+        _LOGGER.debug("turn_off while %s", self.state)
+        if self.state is State.PLAYING:
             await self.send_cmd('Power')
 
-    def __del__(self):
-        if self.stb_send:
-            self.stb_send.close()
-            self.mr_protocol.close()
-            _LOGGER.info("Disconnected")
-
-    async def get_state(self):
-        try:
-            async with timeout(GET_STATE_TIMEOUT, loop=self.loop):
-                self.mr_protocol = await installMediaroomProtocol(box_ip=self.stb_ip, loop=self.loop)
+    async def monitor_state(self):
+        def responses_callback(notify):
+            _LOGGER.debug(notify)
+            if notify.tune:
+                self.state = State.PLAYING
+            else:
+                self.state = State.STANDBY
             
-                notify = await self.mr_protocol.responses.get()
-                
-                if notify.tune:
-                    return State.PLAYING
-                else:
-                    return State.STANDBY
-        except asyncio.TimeoutError as e:
-            return State.OFF
-        
+        self.mr_protocol = await installMediaroomProtocol(responses_callback=responses_callback, box_ip=self.stb_ip, loop=self.loop)
+            
 
 async def discover(ignore_list = [], max_wait=30, loop=None):
     stbs = []
     try:
         async with timeout(max_wait, loop=loop):
-            mr_protocol = await installMediaroomProtocol() 
-            while True:
-                notify = await mr_protocol.responses.get()
+            def responses_callback(notify):
                 stbs.append(notify.ip_address)
+                
+            mr_protocol = await installMediaroomProtocol(responses_callback=responses_callback) 
+            while True:
+                await asyncio.sleep(10)
     except asyncio.TimeoutError as e:
         mr_protocol.close()
         _LOGGER.debug("discover() timeout!")
 
-    return set([stb for stb in stbs if stb not in ignore_list])
+    return list(set([stb for stb in stbs if stb not in ignore_list]))
