@@ -6,50 +6,70 @@ import xmltodict
 
 from datetime import datetime
 
+from .error import PyMediaroomError
+
 _LOGGER = logging.getLogger(__name__)
 
 MEDIAROOM_BROADCAST_ADDR = "239.255.255.250" 
 MEDIAROOM_BROADCAST_PORT = 8082
 TIMEOUT = 5
+GEN_ID_FORMAT = "STB{}"
 
 class MRNotify(object):
     def __init__(self, addr, data):
         self.src_ip = addr[0]
         self.src_port = addr[1]
-
+        self._device = None
         while data[-1:] == '\0': data = data[:-1] # Strip trailing \0's
         while data[:6] != b"NOTIFY": data = data[1:] # Strip head garbage
+        self.data = data
 
         for line in data.decode().split('\n'):
             if line.startswith("x-type"):
-                self.type = line.split(":")[1]
-            if line.startswith("x-filter"):
-                self.filter = line.split(":")[1]
-            if line.startswith("x-lastUserActivity"):
-                self.lastUserActivity = line.split(":")[1]
-            if line.startswith("x-device"):
-                self.device = line.split(":")[1]
-
-            if line.startswith("<"):
-                self.node = xmltodict.parse(line)['node']
-                #import pprint
-                #pprint.pprint(self.node)
-
-        self.data = data
+                self._type = line[line.find(":")+2:]
+            elif line.startswith("x-filter"):
+                self._filter = line[line.find(":")+2:] 
+            elif line.startswith("x-lastUserActivity"):
+                self._lastUserActivity = line[line.find(":")+2:]
+            elif line.startswith("x-device"):
+                self._device = line[line.find(":")+2:]
+            elif line.startswith("x-debug") or\
+                line.startswith("x-location") or\
+                line.startswith("NOTIFY") or\
+                line.startswith("\r"):
+                pass
+            elif line.startswith("<"):
+                self._node = xmltodict.parse(line)['node']
+#                import pprint
+#                pprint.pprint(self._node)
+            else:
+                _LOGGER.error("UNKNOWN LINE: %s", line)
 
     def __str__(self):
+#        _LOGGER.debug("x-type: %s", self._type)
+#        _LOGGER.debug("x-filter: %s", self._filter)
+#        _LOGGER.debug("x-lastUserActivity: %s", self._lastUserActivity)
+#        _LOGGER.debug("x-device: %s", self._device)
+
         return "NOTIFY from {} - {}".format(self.src_ip, self.tune)
 
     @property
     def tune(self):
-        if self.node.get('activities'):
-            return self.node['activities'].get('tune')
+        if self._node.get('activities'):
+            return self._node['activities'].get('tune')
         else:
             raise PyMediaroomError("No <activities> in <node>")
 
     @property
     def ip_address(self):
         return self.src_ip
+
+    @property
+    def device_uuid(self):
+        if self._device:
+            return self._device
+        else:
+            return GEN_ID_FORMAT.format(self.src_ip)
 
 async def installMediaroomProtocol(responses_callback, box_ip=None, loop=None):
 
