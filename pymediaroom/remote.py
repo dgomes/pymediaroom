@@ -31,33 +31,18 @@ class Remote():
         self.stb_port = port
         self.loop = loop
         self.mr_protocol = None
-        self.stb_recv = self.stb_send = None
         self.state = State.UNKNOWN
-    
+        self.lock = asyncio.Lock()
+
+    def get_device_id(self):
+        return notify.GEN_ID_FORMAT.format(self.src_ip)
+
     def __repr__(self):
         return self.stb_ip
 
-    async def open_control(self):
-        try:
-            async with timeout(OPEN_CONTROL_TIMEOUT, loop=self.loop):
-                _LOGGER.debug("Connecting to %s:%s" % (self.stb_ip, self.stb_port))
-                self.stb_recv, self.stb_send = await asyncio.open_connection(self.stb_ip, self.stb_port, loop=self.loop) 
-                await self.stb_recv.read(6)
-                _LOGGER.info("Connected to %s:%s" % (self.stb_ip, self.stb_port))
-        except asyncio.TimeoutError as e:
-            _LOGGER.error("Timeout connecting to %s", self.stb_ip)
-            self.stb_send = self.stb_recv = None
-            raise PyMediaroomError("Timeout connecting to {}".format(self.stb_ip))
-
     async def send_cmd(self, cmd):
         _LOGGER.debug("Send cmd = %s", cmd)
-        try:
-            if self.stb_recv == self.stb_send: 
-                await self.open_control()
-        except PyMediaroomError:
-            _LOGGER.error("No connection to STB")
-            return
-
+        
         if cmd not in Commands and cmd not in range(0,999):
             _LOGGER.error("Unknown command")
             raise PyMediaroomError("Unknown commands")
@@ -70,16 +55,22 @@ class Remote():
             keys = [Commands[cmd]]
 
         try:
-            for key in keys:
-                _LOGGER.debug("{} key={}".format(cmd, key))
-                self.stb_send.write("key={}\n".format(key).encode('UTF-8'))
-                _ = await self.stb_recv.read(3)
-                await asyncio.sleep(0.300)
+            async with timeout(OPEN_CONTROL_TIMEOUT, loop=self.loop):
+                async with self.lock:
+                    _LOGGER.debug("Connecting to %s:%s" % (self.stb_ip, self.stb_port))
+                    stb_recv, stb_send = await asyncio.open_connection(self.stb_ip, self.stb_port, loop=self.loop) 
+                    await stb_recv.read(6)
+                    _LOGGER.info("Connected to %s:%s" % (self.stb_ip, self.stb_port))
+    
+                    for key in keys:
+                        _LOGGER.debug("{} key={}".format(cmd, key))
+                        stb_send.write("key={}\n".format(key).encode('UTF-8'))
+                        _ = await stb_recv.read(3)
+                        await asyncio.sleep(0.300)
+    
         except asyncio.TimeoutError as e:
-            _LOGGER.error(e)
-            self.stb_send.close()
-            self.stb_send = self.stb_recv = None
-            #TODO retry send_cmd
+            raise PyMediaroomError("Timeout connecting to {}".format(self.stb_ip))
+
 
     async def turn_on(self):
         """Turn off media player."""
@@ -112,8 +103,7 @@ async def discover(ignore_list = [], max_wait=30, loop=None):
                 stbs.append(notify.ip_address)
                 
             mr_protocol = await installMediaroomProtocol(responses_callback=responses_callback) 
-            while True:
-                await asyncio.sleep(10)
+            await asyncio.sleep(max_wait)
     except asyncio.TimeoutError as e:
         mr_protocol.close()
         _LOGGER.debug("discover() timeout!")
