@@ -1,5 +1,6 @@
-[![PyPI version](https://badge.fury.io/py/pymediaroom.svg)](https://badge.fury.io/py/pymediaroom)
-
+.. image:: https://badge.fury.io/py/pymediaroom.svg
+    :target: https://badge.fury.io/py/pymediaroom
+    
 pymediaroom - Python Remote Control for Mediaroom STB
 =====================================================
 
