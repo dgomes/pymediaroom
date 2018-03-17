@@ -8,5 +8,8 @@ setup(name='pymediaroom',
       author_email='diogogomes@gmail.com',
       license='MIT',
       packages=['pymediaroom'],
+      install_requires=[
+          'xmltodict',
+      ],
       download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.5',
       )
