@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/pymediaroom.svg)](https://badge.fury.io/py/pymediaroom)
+
 pymediaroom - Python Remote Control for Mediaroom STB
 =====================================================
 
@@ -59,7 +61,7 @@ Available Keys
 - AV
 - Prev
 - Next
-- Options
+- OptionsAlt
 - Favourite
 
 Copyright
