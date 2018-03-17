@@ -7,18 +7,26 @@ import asyncio
 
 async def main(loop):
     stbs = await discover(max_wait=5, loop=loop)
-    stbs = list(stbs)
+    stbs = sorted(list(stbs))
+
+
     if stbs:
         logging.info("Found {}".format(stbs))
-        remote = Remote(stbs[0], loop=loop)
+        remote = Remote(stbs[0])
         #remote = Remote("192.168.1.69", loop=loop)
-        await remote.monitor_state()
+        await installMediaroomProtocol(responses_callback=remote.notify_callback)
+        
+        try:
+            await remote.turn_on()
 
-        await remote.turn_on()
+            await remote.send_cmd('Rose') 
+            await remote.send_cmd('Rose') 
+        except:
+            print("can't connect to STB")
 
         await asyncio.sleep(10)
 
-        await remote.turn_off()
+#        await remote.turn_off()
 
     else:
         logging.error("No STB Found")
