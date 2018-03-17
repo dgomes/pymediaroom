@@ -141,6 +141,10 @@ async def install_mediaroom_protocol(responses_callback, box_ip=None, loop=None)
             """Datagram error callback."""
             _LOGGER.error('Error received: %s', exc)
 
+        def connection_lost(self, exc):
+            """Connection lost."""
+            _LOGGER.info("Connection lost: %s", exc)
+
         def close(self):
             """Close socket."""
             _LOGGER.debug("Closing MediaroomProtocol")

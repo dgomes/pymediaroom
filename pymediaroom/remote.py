@@ -30,14 +30,19 @@ class Remote():
 
     def __init__(self, ip):
         self.stb_ip = ip
-        self.state = State.UNKNOWN
+        self._state = State.UNKNOWN
         self.lock = asyncio.Lock()
         self.tune_src = None
         self.current_channel = None
 
-    def get_device_id(self):
+    @property
+    def device_id(self):
         """Generate pseudo device ID from fixed IP assigned by operator."""
         return GEN_ID_FORMAT.format(self.stb_ip)
+
+    @property
+    def state(self):
+        return self._state
 
     def resolv(self, tune_src):
         """Return the channel name. TODO: implement remote webservice to resolv tune_src"""
@@ -88,20 +93,20 @@ class Remote():
 
     async def turn_on(self):
         """Turn off media player."""
-        _LOGGER.debug("turn_on while %s", self.state)
-        if self.state in [State.STANDBY, State.OFF, State.UNKNOWN]:
+        _LOGGER.debug("turn_on while %s", self._state)
+        if self._state in [State.STANDBY, State.OFF, State.UNKNOWN]:
             await self.send_cmd('Power')
-            self.state = State.PLAYING_LIVE_TV
-        return self.state
+            self._state = State.PLAYING_LIVE_TV
+        return self._state
 
     async def turn_off(self):
         """Turn off media player."""
-        _LOGGER.debug("turn_off while %s", self.state)
-        if self.state in [State.PLAYING_LIVE_TV, State.PLAYING_RECORDED_TV,
+        _LOGGER.debug("turn_off while %s", self._state)
+        if self._state in [State.PLAYING_LIVE_TV, State.PLAYING_RECORDED_TV,
                           State.PLAYING_TIMESHIFT_TV, State.UNKNOWN]:
             await self.send_cmd('Power')
-            self.state = State.OFF
-        return self.state
+            self._state = State.OFF
+        return self._state
 
     def notify_callback(self, notify):
         """Process State from NOTIFY message."""
@@ -110,19 +115,19 @@ class Remote():
             return
 
         if notify.tune:
-            self.state = State.PLAYING_LIVE_TV 
+            self._state = State.PLAYING_LIVE_TV 
             self.tune_src = notify.tune['@src']
             if notify.stopped:
-                self.state = State.STOPPED
+                self._state = State.STOPPED
             elif notify.timeshift:
-                self.state = State.PLAYING_TIMESHIFT_TV
+                self._state = State.PLAYING_TIMESHIFT_TV
             elif notify.recorded:
-                self.state = State.PLAYING_RECORDED_TV
+                self._state = State.PLAYING_RECORDED_TV
         else:
-            self.state = State.STANDBY
+            self._state = State.STANDBY
         
-        _LOGGER.debug("%s is %s", self.stb_ip, self.state)
-        return self.state
+        _LOGGER.debug("%s is %s", self.stb_ip, self._state)
+        return self._state
 
 async def discover(ignore_list=[], max_wait=30, loop=None):
     """List STB in the network."""
