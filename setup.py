@@ -10,6 +10,8 @@ setup(name='pymediaroom',
       packages=['pymediaroom'],
       install_requires=[
           'xmltodict',
+          'asyncio',
+          'async_timeout',
       ],
       download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.5',
       )

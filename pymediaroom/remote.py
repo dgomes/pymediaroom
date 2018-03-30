@@ -117,12 +117,15 @@ class Remote():
         if notify.tune:
             self._state = State.PLAYING_LIVE_TV 
             self.tune_src = notify.tune['@src']
-            if notify.stopped:
-                self._state = State.STOPPED
-            elif notify.timeshift:
-                self._state = State.PLAYING_TIMESHIFT_TV
-            elif notify.recorded:
-                self._state = State.PLAYING_RECORDED_TV
+            try:
+                if notify.stopped:
+                    self._state = State.STOPPED
+                elif notify.timeshift:
+                    self._state = State.PLAYING_TIMESHIFT_TV
+                elif notify.recorded:
+                    self._state = State.PLAYING_RECORDED_TV
+            except PyMediaroomError as e:
+                _LOGGER.debug("%s please report at https://github.com/dgomes/pymediaroom/issues", e)
         else:
             self._state = State.STANDBY
         
