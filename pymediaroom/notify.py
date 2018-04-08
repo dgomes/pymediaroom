@@ -4,6 +4,7 @@ import asyncio
 import socket
 import logging
 import xmltodict
+import collections
 
 from .error import PyMediaroomError
 
