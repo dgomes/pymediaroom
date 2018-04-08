@@ -4,6 +4,7 @@ import asyncio
 import socket
 import logging
 import xmltodict
+import collections
 
 from .error import PyMediaroomError
 
@@ -59,7 +60,12 @@ class MediaroomNotify(object):
     def tune(self):
         """XML node representing tune."""
         if self._node.get('activities'):
-            return self._node['activities'].get('tune')
+            tune = self._node['activities'].get('tune')
+            if type(tune) is collections.OrderedDict:
+                return tune
+            elif type(tune) is list:
+                return tune[0]
+            return tune
         return None
 
     @property
