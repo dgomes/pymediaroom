@@ -59,7 +59,9 @@ class MediaroomNotify(object):
     def tune(self):
         """XML node representing tune."""
         if self._node.get('activities'):
-            return self._node['activities'].get('tune')
+            tune = self._node['activities'].get('tune')
+            if
+            return None if not tune else tune[0]
         return None
 
     @property
