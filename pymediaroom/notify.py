@@ -60,8 +60,11 @@ class MediaroomNotify(object):
         """XML node representing tune."""
         if self._node.get('activities'):
             tune = self._node['activities'].get('tune')
-            if
-            return None if not tune else tune[0]
+            if type(tune) is collections.OrderedDict:
+                return tune
+            elif type(tune) is list:
+                return tune[0]
+            return tune
         return None
 
     @property
