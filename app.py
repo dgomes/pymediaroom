@@ -3,7 +3,7 @@ from pymediaroom import (discover, Remote, install_mediaroom_protocol, State)
 import asyncio
 
 async def main(loop):
-    stbs = await discover(max_wait=5, loop=loop)
+    stbs = await discover(max_wait=5)
     stbs = sorted(list(stbs))
 
     if stbs:
@@ -28,6 +28,12 @@ async def main(loop):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
+
+    try:
+        import uvloop
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        pass
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main(loop))
