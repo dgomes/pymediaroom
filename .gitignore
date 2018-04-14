@@ -4,3 +4,4 @@ venv/
 *.pyc
 *.tar.gz
 *egg-info/
+build/
