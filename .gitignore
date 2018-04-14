@@ -5,3 +5,4 @@ venv/
 *.tar.gz
 *egg-info/
 build/
+dist/
