@@ -106,37 +106,15 @@ class MediaroomNotify(object):
 
 async def install_mediaroom_protocol(responses_callback, box_ip=None, loop=None):
     """Install an asyncio protocol to process NOTIFY messages."""
-    class MediaroomProtocol:
+    class MediaroomProtocol(asyncio.DatagramProtocol):
         """Mediaroom asyncio protocol."""
-        def __init__(self, loop, responses_callback, addr):
-            self.loop = loop
-            self.transport = None
-            self.addr = addr
+
+        def __init__(self, responses_callback):
             self.responses = responses_callback
 
         def connection_made(self, transport):
-            """Setup multicast socket."""
+            """Setup transport."""
             self.transport = transport
-
-            sock = self.transport.get_extra_info('socket')
-            sock.settimeout(0)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-            # for BSD/Darwin only
-            try:
-                socket.SO_REUSEPORT
-            except AttributeError:
-                _LOGGER.debug("No SO_REUSEPORT available, skipping")
-            else:
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-
-            # IGMP packet
-            addrinfo = socket.getaddrinfo(self.addr, None)[0]
-            group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
-            mreq = group_bin + struct.pack('=I', socket.INADDR_ANY)
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-
-            sock.bind(('', MEDIAROOM_BROADCAST_PORT))
 
         def datagram_received(self, data, addr):
             """Datagram received callback."""
@@ -147,10 +125,6 @@ async def install_mediaroom_protocol(responses_callback, box_ip=None, loop=None)
             """Datagram error callback."""
             _LOGGER.error('Error received: %s', exc)
 
-        def connection_lost(self, exc):
-            """Connection lost."""
-            _LOGGER.info("Connection lost: %s", exc)
-
         def close(self):
             """Close socket."""
             _LOGGER.debug("Closing MediaroomProtocol")
@@ -158,10 +132,29 @@ async def install_mediaroom_protocol(responses_callback, box_ip=None, loop=None)
 
     loop = loop or asyncio.get_event_loop()
 
-    mediaroom_protocol = MediaroomProtocol(loop, responses_callback, MEDIAROOM_BROADCAST_ADDR)
+    mediaroom_protocol = MediaroomProtocol(responses_callback)
 
+    # Create multicast socket
     addrinfo = socket.getaddrinfo(MEDIAROOM_BROADCAST_ADDR, None)[0]
     sock = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
+    sock.settimeout(0)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    # for BSD/Darwin only
+    try:
+        socket.SO_REUSEPORT
+    except AttributeError:
+        _LOGGER.debug("No SO_REUSEPORT available, skipping")
+    else:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
+    # IGMP packet
+    group_bin = socket.inet_pton(addrinfo[0], addrinfo[4][0])
+    mreq = group_bin + struct.pack('=I', socket.INADDR_ANY)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+    sock.bind(('', MEDIAROOM_BROADCAST_PORT))
+
     await loop.create_datagram_endpoint(lambda: mediaroom_protocol, sock=sock)
 
     return mediaroom_protocol
