@@ -3,7 +3,7 @@ from setuptools import setup
 long_description=open("README.rst").read()
 
 setup(name='pymediaroom',
-      version='0.6.2',
+      version='0.6.3',
       description='Remote control your Mediaroom Set-up-box',
       long_description=long_description,
       long_description_content_type='text/x-rst',
@@ -18,5 +18,5 @@ setup(name='pymediaroom',
         'xmltodict',
       ],
       python_requires='>=3.5',
-      download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.6.2',
+      download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.6.3',
       )
