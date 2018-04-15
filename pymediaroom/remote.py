@@ -139,6 +139,7 @@ async def discover(ignore_list=[], max_wait=30, loop=None):
         async with timeout(max_wait, loop=loop):
             def responses_callback(notify):
                 """Queue notify messages."""
+                _LOGGER.debug("Found: %s", notify.ip_address)
                 stbs.append(notify.ip_address)
 
             mr_protocol = await install_mediaroom_protocol(responses_callback=responses_callback)

@@ -104,36 +104,7 @@ class MediaroomNotify(object):
             return self._device
         return GEN_ID_FORMAT.format(self.src_ip)
 
-async def install_mediaroom_protocol(responses_callback, box_ip=None, loop=None):
-    """Install an asyncio protocol to process NOTIFY messages."""
-    class MediaroomProtocol(asyncio.DatagramProtocol):
-        """Mediaroom asyncio protocol."""
-
-        def __init__(self, responses_callback):
-            self.responses = responses_callback
-
-        def connection_made(self, transport):
-            """Setup transport."""
-            self.transport = transport
-
-        def datagram_received(self, data, addr):
-            """Datagram received callback."""
-            if not box_ip or box_ip == addr[0]:
-                self.responses(MediaroomNotify(addr, data))
-
-        def error_received(self, exc):
-            """Datagram error callback."""
-            _LOGGER.error('Error received: %s', exc)
-
-        def close(self):
-            """Close socket."""
-            _LOGGER.debug("Closing MediaroomProtocol")
-            self.transport.close()
-
-    loop = loop or asyncio.get_event_loop()
-
-    mediaroom_protocol = MediaroomProtocol(responses_callback)
-
+def create_socket():
     # Create multicast socket
     addrinfo = socket.getaddrinfo(MEDIAROOM_BROADCAST_ADDR, None)[0]
     sock = socket.socket(addrinfo[0], socket.SOCK_DGRAM)
@@ -154,6 +125,58 @@ async def install_mediaroom_protocol(responses_callback, box_ip=None, loop=None)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
     sock.bind(('', MEDIAROOM_BROADCAST_PORT))
+
+    return sock
+
+class MediaroomProtocol(asyncio.DatagramProtocol):
+    """Mediaroom asyncio protocol."""
+
+    def __init__(self, responses_callback, box_ip=None):
+        super().__init__()
+        self.responses = responses_callback
+        self.box_ip = box_ip
+
+    def connection_made(self, transport):
+        """Setup transport."""
+        self.transport = transport
+
+    def connection_lost(self, exception):
+        """Connection is lost."""
+        if exception is None:
+            pass
+        else:
+            _LOGGER.error("Received unexpected connection loss: %s", exception)
+
+    def datagram_received(self, data, addr):
+        """Datagram received callback."""
+        #_LOGGER.debug(data)
+        if not self.box_ip or self.box_ip == addr[0]:
+            self.responses(MediaroomNotify(addr, data))
+
+    def error_received(self, exception):
+        """Datagram error callback."""
+        if exception is None:
+            pass
+        else:
+            import pprint
+            pprint.pprint(exception)
+            _LOGGER.error('Error received: %s', exception)
+
+    def close(self):
+        """Close socket."""
+        _LOGGER.debug("Closing MediaroomProtocol")
+        self.transport.close()
+
+async def install_mediaroom_protocol(responses_callback, box_ip=None):
+    """Install an asyncio protocol to process NOTIFY messages."""
+    from . import version
+    _LOGGER.debug(version)
+
+    loop = asyncio.get_event_loop()
+
+    mediaroom_protocol = MediaroomProtocol(responses_callback, box_ip)
+
+    sock = create_socket()
 
     await loop.create_datagram_endpoint(lambda: mediaroom_protocol, sock=sock)
 
