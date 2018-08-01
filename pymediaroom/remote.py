@@ -64,6 +64,8 @@ class Remote():
         if cmd in range(0, 999):
             for character in str(cmd):
                 keys.append(COMMANDS["Number"+str(character)])
+            if len(keys) < 3:
+                keys.append(COMMANDS["OK"])
             self.current_channel = cmd
         else:
             keys = [COMMANDS[cmd]]

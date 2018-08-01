@@ -18,8 +18,9 @@ async def main(loop):
 
         await remote.turn_on()
 
-        await remote.send_cmd('Rose') 
-        await remote.send_cmd('Rose') 
+        await remote.send_cmd(100) 
+        await asyncio.sleep(10)
+        await remote.send_cmd(5) 
 
         await asyncio.sleep(10)
 
