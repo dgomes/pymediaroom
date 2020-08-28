@@ -13,7 +13,6 @@ setup(name='pymediaroom',
       license='MIT',
       packages=['pymediaroom'],
       install_requires=[
-        'asyncio',
         'async-timeout',
         'xmltodict',
       ],
