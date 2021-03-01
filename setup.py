@@ -1,9 +1,10 @@
 from setuptools import setup
+from pymediaroom import version
 
 long_description=open("README.rst").read()
 
 setup(name='pymediaroom',
-      version='0.6.4',
+      version=version,
       description='Remote control your Mediaroom Set-up-box',
       long_description=long_description,
       long_description_content_type='text/x-rst',
