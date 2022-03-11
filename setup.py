@@ -18,5 +18,5 @@ setup(name='pymediaroom',
         'xmltodict',
       ],
       python_requires='>=3.5',
-      download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.6.4',
+      download_url= 'https://github.com/dgomes/pymediaroom/tarball/0.6.5.2',
       )
