@@ -2,14 +2,14 @@ import logging
 from pymediaroom import (discover, Remote, install_mediaroom_protocol, State)
 import asyncio
 
-async def main(loop):
+async def main():
     stbs = await discover(max_wait=5)
     stbs = sorted(list(stbs))
 
     if stbs:
         logging.info("Found {}".format(stbs))
         remote = Remote(stbs[0])
-        #remote = Remote("192.168.1.69", loop=loop)
+        #remote = Remote("192.168.1.69")
         await install_mediaroom_protocol(responses_callback=remote.notify_callback)
 
 
@@ -37,6 +37,6 @@ if __name__ == '__main__':
         pass
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(loop))
+    loop.run_until_complete(main())
     loop.close()
 
