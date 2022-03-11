@@ -52,7 +52,7 @@ class Remote():
     def __repr__(self):
         return self.stb_ip
 
-    async def send_cmd(self, cmd, loop=None):
+    async def send_cmd(self, cmd):
         """Send remote command to STB."""
         _LOGGER.info("Send cmd = %s", cmd)
 
@@ -71,12 +71,12 @@ class Remote():
             keys = [COMMANDS[cmd]]
 
         try:
-            async with timeout(OPEN_CONTROL_TIMEOUT, loop=loop):
+            async with timeout(OPEN_CONTROL_TIMEOUT):
                 async with self.lock:
                     _LOGGER.debug("Connecting to %s:%s", self.stb_ip, REMOTE_CONTROL_PORT)
                     stb_recv, stb_send = await asyncio.open_connection(self.stb_ip,
                                                                        REMOTE_CONTROL_PORT,
-                                                                       loop=loop)
+                                                                       )
                     await stb_recv.read(6)
                     _LOGGER.info("Connected to %s:%s", self.stb_ip, REMOTE_CONTROL_PORT)
 
@@ -134,11 +134,11 @@ class Remote():
         _LOGGER.debug("%s is %s", self.stb_ip, self._state)
         return self._state
 
-async def discover(ignore_list=[], max_wait=30, loop=None):
+async def discover(ignore_list=[], max_wait=30):
     """List STB in the network."""
     stbs = []
     try:
-        async with timeout(max_wait, loop=loop):
+        async with timeout(max_wait):
             def responses_callback(notify):
                 """Queue notify messages."""
                 _LOGGER.debug("Found: %s", notify.ip_address)
