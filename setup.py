@@ -1,6 +1,6 @@
 from setuptools import setup
-from pymediaroom import version
 
+version=open("VERSION").read()
 long_description=open("README.rst").read()
 
 setup(name='pymediaroom',
@@ -14,7 +14,7 @@ setup(name='pymediaroom',
       license='MIT',
       packages=['pymediaroom'],
       install_requires=[
-        'async_timeout',
+        'async_timeout>=4.0',
         'xmltodict',
       ],
       python_requires='>=3.5',
