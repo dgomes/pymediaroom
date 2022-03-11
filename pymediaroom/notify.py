@@ -169,9 +169,6 @@ class MediaroomProtocol(asyncio.DatagramProtocol):
 
 async def install_mediaroom_protocol(responses_callback, box_ip=None):
     """Install an asyncio protocol to process NOTIFY messages."""
-    from . import version
-    _LOGGER.debug(version)
-
     loop = asyncio.get_event_loop()
 
     mediaroom_protocol = MediaroomProtocol(responses_callback, box_ip)
