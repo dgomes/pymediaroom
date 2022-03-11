@@ -14,7 +14,7 @@ setup(name='pymediaroom',
       license='MIT',
       packages=['pymediaroom'],
       install_requires=[
-        'async-timeout',
+        'async_timeout',
         'xmltodict',
       ],
       python_requires='>=3.5',
